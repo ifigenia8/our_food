@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  
+  db-master:
+    image: mysql:5.7
+    volumes:
+      - dbdata:/var/lib/mysql
+      
+    environment:
+      MYSQL_ROOT_PASSWORD: mysecretpassword
+      MYSQL_DATABASE: our_food  
+      MYSQL_USER: our_food_user
+      MYSQL_PASSWORD: our_food_password
+      MYSQL_PORT: 3306 
+    ports:
+      - 3306:3306
+    
+  server-master:
+    build: .
+    ports:
+      - 3000:3000
+    environment:
+      MYSQL_ROOT_PASSWORD: mysecretpassword
+      MYSQL_DATABASE: our_food  
+      MYSQL_USER: our_food_user
+      MYSQL_PASSWORD: our_food_password
+      MYSQL_HOST: db-master
+      MYSQL_PORT: 3306 
+    depends_on:
+     - db-master
+  
+  phpmyadmin: 
+    image: phpmyadmin
+    ports:
+      - 8080:80
+    links:
+      - db-master
+    environment:
+      PMA_HOST: db-master
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+      PMA_USER: our_food_user
+      PMA_PASSWORD: our_food_password
+    depends_on: 
+      - db-master
+
+volumes:
+  dbdata:
+ 
+ 
