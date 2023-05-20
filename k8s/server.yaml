@@ -1,0 +1,51 @@
+# Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: our-food-server
+  namespace: default
+  labels:
+    app: our-food-server
+spec:
+  selector:
+    app: our-food-server
+  ports:
+    - port: 3000
+---
+# Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: our-food-server
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: our-food-server
+  template:
+    metadata:
+      labels:
+        app: our-food-server
+    spec:
+      containers:
+        # Server
+        - name: server-master
+          image: ghcr.io/ifigenia8/our_food:main
+          imagePullPolicy: Always
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: mysecretpassword
+            - name: MYSQL_DATABASE
+              value: our_food
+            - name: MYSQL_USER
+              value: our_food_user
+            - name: MYSQL_PASSWORD
+              value: our_food_password 
+            - name: MYSQL_PORT
+              value: "3306" 
+            - name: MYSQL_HOST
+              value: db-master
+          ports:
+            - containerPort: 3000
+      imagePullSecrets:
+        - name: git-secret

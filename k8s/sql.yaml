@@ -1,0 +1,109 @@
+# Database Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-master
+  namespace: default
+  labels:
+    app: db-master
+spec:
+  selector:
+    app: db-master
+  ports:
+    - port: 3306
+---
+# Database Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-master
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: db-master
+  template:
+    metadata:
+      labels:
+        app: db-master
+    spec:
+      containers:
+        # Database
+        - name: db-master
+          image: mysql:5.7
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_PASSWORD 
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_PORT      
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: our-food-persistent-storage-pvc
+              mountPath: /var/lib/mysql
+      volumes:
+          - name: our-food-persistent-storage-pvc
+            persistentVolumeClaim:
+              claimName: our-food-persistent-storage-pvc
+
+---
+#PV
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: our-food-persistent-storage-pv
+  namespace: default
+  labels:
+    type: local
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  claimRef:
+    namespace: default
+    name: our-food-persistent-storage-pvc
+  hostPath:
+    path: /var/lib/mysql
+
+---
+
+#PVC
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: our-food-persistent-storage-pvc
+  namespace: default
+spec:
+  storageClassName: "" # Empty string must be explicitly set otherwise default StorageClass will be set
+  accessModes: 
+    - ReadWriteOnce
+  volumeName: our-food-persistent-storage-pv
+  resources: 
+    requests: 
+      storage: 1Gi
