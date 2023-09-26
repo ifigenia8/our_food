@@ -1,4 +1,3 @@
-# Server Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,7 +11,6 @@ spec:
   ports:
     - port: 3000
 ---
-# Server Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -28,24 +26,49 @@ spec:
         app: our-food-server
     spec:
       containers:
-        # Server
         - name: server-master
           image: ghcr.io/ifigenia8/our_food:main
           imagePullPolicy: Always
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: mysecretpassword
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_ROOT_PASSWORD
             - name: MYSQL_DATABASE
-              value: our_food
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE
             - name: MYSQL_USER
-              value: our_food_user
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_USER
             - name: MYSQL_PASSWORD
-              value: our_food_password 
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_PASSWORD 
             - name: MYSQL_PORT
-              value: "3306" 
-            - name: MYSQL_HOST
-              value: db-master
+              valueFrom:
+                configMapKeyRef:
+                  name: config-food
+                  key: DATABASE_PORT
           ports:
             - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              port: 3000
+              path: /healthz/ready
+              scheme: HTTP
       imagePullSecrets:
         - name: git-secret
